@@ -1,539 +1,585 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>IB SEHS Blood Glucose Homeostasis Simulation</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IB SEHS Blood Glucose Homeostasis Simulator</title>
 <style>
 :root{
-  --navy:#0f2942;
-  --blue:#2f80ed;
-  --orange:#f2994a;
-  --green:#27ae60;
-  --red:#eb5757;
-  --gold:#f2c94c;
-  --ink:#17324d;
-  --muted:#6d7f91;
-  --panel:#ffffff;
-  --line:#d9e5ef;
-  --bg:#eef4f8;
+  --navy:#0b2a43;
+  --blue:#176b9b;
+  --cyan:#42c7e8;
+  --green:#28a96b;
+  --red:#df4b57;
+  --amber:#f3aa2f;
+  --cream:#f5f9fc;
+  --ink:#102536;
+  --muted:#6b7e8c;
+  --card:#ffffff;
 }
 *{box-sizing:border-box}
 body{
   margin:0;
-  font-family:Inter,Segoe UI,Arial,sans-serif;
+  font-family:Arial,Helvetica,sans-serif;
+  color:var(--ink);
   background:
-    radial-gradient(circle at top right,#dcecf8 0,transparent 30%),
-    linear-gradient(180deg,#edf5fa,#e7eef4);
-  color:var(--ink)
+    radial-gradient(circle at 15% 10%,rgba(66,199,232,.18),transparent 24%),
+    linear-gradient(180deg,#eaf6fc 0%,#f8fbfd 55%,#eef5f8 100%);
+  min-height:100vh;
 }
 header{
-  background:linear-gradient(135deg,#0f2942,#194f77);
+  background:linear-gradient(135deg,var(--navy),#124f75);
   color:white;
-  padding:20px 18px;
-  box-shadow:0 8px 24px #0f294233
+  padding:20px 24px;
+  box-shadow:0 6px 22px rgba(7,31,48,.22);
 }
-header h1{margin:0;font-size:clamp(1.4rem,3vw,2.25rem);letter-spacing:.2px}
-header p{margin:7px 0 0;color:#dbe9f4}
-main{max-width:1240px;margin:auto;padding:18px}
-.dashboard{
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:12px;
-  margin-bottom:16px
-}
-.metric{
-  background:#fff;
-  border:1px solid var(--line);
-  border-radius:16px;
-  padding:13px 14px;
-  box-shadow:0 8px 20px #16324b0d
-}
-.metric span{display:block;color:var(--muted);font-size:.82rem}
-.metric strong{display:block;margin-top:4px;font-size:1.18rem}
-.progress-shell{height:10px;background:#e2ebf1;border-radius:999px;overflow:hidden;margin-top:10px}
-.progress{height:100%;width:0;background:linear-gradient(90deg,#2f80ed,#27ae60);transition:width .6s ease}
-.grid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(320px,.85fr);gap:16px}
-.card{
-  background:var(--panel);
-  border:1px solid var(--line);
-  border-radius:18px;
-  padding:15px;
-  box-shadow:0 12px 30px #14324b10
-}
-.card-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
-.card-head h2{margin:0;font-size:1.2rem}
-.badge{
-  background:#e8f1f8;
-  color:#234865;
-  border-radius:999px;
-  padding:7px 11px;
-  font-weight:700;
-  font-size:.82rem
-}
-.sim-wrap{
-  position:relative;
-  border:1px solid var(--line);
-  border-radius:18px;
-  overflow:hidden;
-  background:linear-gradient(180deg,#fafdff,#f4f9fc);
-  min-height:510px
-}
-#simSvg{width:100%;height:auto;display:block}
-#simSvg text{font-family:Inter,Segoe UI,Arial,sans-serif}
-.pulse{animation:pulse 1.8s ease-in-out infinite}
-@keyframes pulse{0%,100%{opacity:.55;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}
-.flowDash{stroke-dasharray:12 12;animation:flow 1.6s linear infinite}
-@keyframes flow{to{stroke-dashoffset:-24}}
-.glow{filter:url(#softGlow)}
-.organActive{filter:url(#strongGlow)}
-.float{animation:float 2.4s ease-in-out infinite}
-@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
-.controls{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px}
-button{
-  border:0;
-  border-radius:11px;
-  padding:11px 14px;
-  font-weight:700;
-  cursor:pointer;
-  transition:.2s ease;
-  font-size:.95rem
-}
-button:hover{transform:translateY(-1px)}
-button:disabled{cursor:default;transform:none}
-.primary{background:linear-gradient(135deg,#12395b,#1f5a86);color:white}
-.secondary{background:#edf3f7;color:#203a51}
-.why{background:#fff3c4;color:#725000}
-.choice-grid{display:grid;gap:10px;margin-top:12px}
-.choice{
-  width:100%;
-  text-align:left;
-  background:#fff;
-  border:2px solid #dbe6ee;
-  color:var(--ink);
-  padding:13px;
-  border-radius:12px
-}
-.choice:hover{border-color:#91b8d3;background:#f8fbfd}
-.choice.correct{border-color:var(--green);background:#eefaf3}
-.choice.wrong{border-color:var(--red);background:#fff1f2}
-.feedback{
-  margin-top:13px;
-  border-left:5px solid #315a7c;
-  background:#f5f9fc;
-  padding:13px;
-  border-radius:10px;
-  min-height:100px
-}
-.feedback.good{border-color:var(--green);background:#effaf4}
-.feedback.bad{border-color:var(--red);background:#fff4f4}
-.hidden{display:none}
-.flow-list{display:grid;gap:9px}
-.flow-step{
-  border:1px solid var(--line);
-  border-radius:10px;
-  padding:10px 11px;
-  background:#f8fbfd
-}
-.flow-step.active{border-color:#4d84ad;background:#eaf3f9;font-weight:700}
-.flow-step.done{border-color:var(--green);background:#effaf4}
-.tip{
-  color:var(--muted);
-  font-size:.88rem;
-  margin-top:12px;
-  line-height:1.45
-}
-.state-chip{
-  position:absolute;
-  left:18px;
-  top:18px;
-  z-index:2;
-  padding:8px 11px;
-  border-radius:999px;
-  background:#ffffffdf;
-  border:1px solid #dce8ef;
-  font-size:.85rem;
-  font-weight:700;
-  backdrop-filter:blur(5px)
-}
-.legend{
-  position:absolute;
-  right:18px;
-  bottom:16px;
-  z-index:2;
-  background:#ffffffdf;
-  border:1px solid #dce8ef;
-  border-radius:12px;
-  padding:9px 11px;
+.header-wrap{
+  max-width:1180px;
+  margin:auto;
   display:flex;
-  gap:12px;
-  flex-wrap:wrap;
-  font-size:.8rem;
-  backdrop-filter:blur(5px)
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
 }
-.legend i{display:inline-block;width:10px;height:10px;margin-right:5px;vertical-align:middle}
-@media(max-width:920px){
-  .grid{grid-template-columns:1fr}
+header h1{margin:0;font-size:clamp(24px,4vw,40px)}
+header p{margin:6px 0 0;color:#cbeafa}
+.badge{
+  background:rgba(255,255,255,.14);
+  border:1px solid rgba(255,255,255,.25);
+  padding:8px 12px;
+  border-radius:999px;
+  font-weight:700;
+  white-space:nowrap;
 }
-@media(max-width:680px){
-  .dashboard{grid-template-columns:repeat(2,1fr)}
-  .sim-wrap{min-height:430px}
+main{
+  max-width:1180px;
+  margin:22px auto;
+  padding:0 16px 36px;
+}
+.layout{
+  display:grid;
+  grid-template-columns:1.35fr .85fr;
+  gap:18px;
+}
+.card{
+  background:var(--card);
+  border-radius:18px;
+  box-shadow:0 12px 34px rgba(24,62,82,.12);
+  border:1px solid #dceaf1;
+  overflow:hidden;
+}
+.card-head{
+  padding:14px 18px;
+  background:#f4f9fc;
+  border-bottom:1px solid #dceaf1;
+  font-weight:800;
+}
+.stage{
+  min-height:500px;
+  position:relative;
+  overflow:hidden;
+  background:
+    linear-gradient(180deg,#eaf7fb 0 46%,#f6e8cb 46% 100%);
+}
+.sky-label{
+  position:absolute;left:18px;top:14px;
+  color:#32627d;font-weight:700;font-size:14px;
+}
+.blood-vessel{
+  position:absolute;
+  left:8%;right:8%;top:42%;
+  height:86px;
+  border-radius:46px;
+  background:linear-gradient(180deg,#a21d38,#df4660 45%,#a81734);
+  box-shadow:inset 0 7px 12px rgba(255,255,255,.22),0 8px 20px rgba(99,21,36,.22);
+  border:5px solid rgba(117,14,34,.45);
+  overflow:hidden;
+}
+.flow{
+  position:absolute;inset:0;
+  background:repeating-linear-gradient(90deg,transparent 0 65px,rgba(255,255,255,.12) 65px 80px);
+  animation:flow 2.2s linear infinite;
+}
+@keyframes flow{to{transform:translateX(80px)}}
+.glucose{
+  position:absolute;
+  width:18px;height:18px;border-radius:50%;
+  background:#ffe26b;border:3px solid #d59b17;
+  box-shadow:0 0 10px rgba(255,226,107,.75);
+  animation:drift 5s linear infinite;
+}
+@keyframes drift{
+  from{transform:translateX(-80px) rotate(0)}
+  to{transform:translateX(760px) rotate(360deg)}
+}
+.organ{
+  position:absolute;
+  display:flex;align-items:center;justify-content:center;
+  text-align:center;
+  font-weight:800;
+  color:#133247;
+  filter:drop-shadow(0 9px 10px rgba(20,44,58,.18));
+  transition:.35s transform,.35s filter;
+}
+.organ.active{
+  transform:scale(1.08);
+  filter:drop-shadow(0 0 16px rgba(66,199,232,.85));
+}
+.pancreas{
+  left:9%;top:13%;
+  width:180px;height:82px;
+  border-radius:55% 45% 60% 40%;
+  background:linear-gradient(135deg,#f7bd62,#e78938);
+  border:4px solid #b95d20;
+}
+.liver{
+  right:9%;top:10%;
+  width:205px;height:125px;
+  border-radius:58% 42% 54% 46%;
+  background:linear-gradient(135deg,#a64a3e,#6f2527);
+  border:4px solid #5f1a1d;
+  color:white;
+}
+.muscle{
+  left:50%;bottom:7%;
+  transform:translateX(-50%);
+  width:245px;height:105px;
+  border-radius:52% 48% 50% 50%;
+  background:repeating-linear-gradient(90deg,#d15b55 0 12px,#f18d7f 12px 24px);
+  border:4px solid #9e3636;
+  color:white;
+}
+.muscle.active{transform:translateX(-50%) scale(1.08)}
+.organ small{display:block;font-weight:600;opacity:.9}
+.hormone{
+  position:absolute;
+  padding:7px 11px;border-radius:999px;
+  color:white;font-weight:800;font-size:13px;
+  opacity:0;
+  pointer-events:none;
+}
+.hormone.go{animation:hormoneMove 2.2s ease-in-out forwards}
+.insulin{background:var(--blue)}
+.glucagon{background:var(--amber);color:#492f00}
+@keyframes hormoneMove{
+  0%{opacity:0;transform:translate(0,0) scale(.7)}
+  15%{opacity:1}
+  100%{opacity:0;transform:translate(430px,155px) scale(1)}
+}
+.gauge-wrap{
+  padding:18px;
+}
+.gauge-title{
+  display:flex;justify-content:space-between;align-items:center;
+  gap:10px;margin-bottom:8px;font-weight:800;
+}
+.gauge{
+  height:22px;border-radius:999px;
+  background:linear-gradient(90deg,#4c9ed9 0 34%,#45b879 34% 66%,#e4585e 66%);
+  position:relative;
+  box-shadow:inset 0 2px 5px rgba(0,0,0,.2);
+}
+.needle{
+  position:absolute;top:-8px;
+  width:6px;height:38px;border-radius:4px;
+  background:#152f43;
+  left:50%;
+  transition:left .6s cubic-bezier(.2,.8,.2,1);
+}
+.gauge-labels{
+  display:flex;justify-content:space-between;
+  font-size:12px;color:var(--muted);margin-top:6px;
+}
+.controls{padding:18px}
+.scenario-row{
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;
+}
+button{
+  border:0;border-radius:12px;
+  padding:13px 14px;
+  font-size:15px;font-weight:800;
+  cursor:pointer;
+  transition:.2s transform,.2s filter;
+}
+button:hover{transform:translateY(-2px);filter:brightness(1.04)}
+.high{background:#ffe6e8;color:#8d1825;border:2px solid #e99199}
+.low{background:#e6f2ff;color:#125680;border:2px solid #88bddf}
+.reset{background:#e9eff3;color:#2c4d60;width:100%;margin-top:10px}
+.question-card{padding:18px}
+.step{
+  color:var(--blue);
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  font-size:12px;
+}
+#question{
+  font-size:23px;line-height:1.25;margin:8px 0 14px;
+}
+.options{display:grid;gap:9px}
+.option{
+  text-align:left;background:#f6fafc;color:#17384c;border:2px solid #dbe9f0;
+}
+.option.correct{background:#dcf6e9;border-color:#5bc58d;color:#14623d}
+.option.wrong{background:#ffe3e6;border-color:#ec858d;color:#8b1d27}
+.feedback{
+  display:none;
+  margin-top:13px;padding:12px 14px;
+  border-radius:12px;line-height:1.45;
+}
+.feedback.show{display:block}
+.feedback.good{background:#e4f7ed;border-left:5px solid var(--green)}
+.feedback.bad{background:#ffe9eb;border-left:5px solid var(--red)}
+.next{
+  display:none;
+  width:100%;
+  margin-top:12px;background:var(--navy);color:white;
+}
+.next.show{display:block}
+.pathway{
+  padding:14px 18px 18px;
+  display:grid;gap:8px;
+}
+.path-node{
+  padding:10px 12px;
+  border-radius:10px;
+  background:#f3f7f9;
+  color:#728490;
+  border:1px solid #dce6eb;
+}
+.path-node.active{
+  background:#e4f5fb;color:#164b68;
+  border-color:#64b9dc;font-weight:800;
+}
+.score{
+  padding:14px 18px;
+  display:flex;justify-content:space-between;align-items:center;
+  border-top:1px solid #e1ebf0;
+}
+.score strong{font-size:20px}
+footer{text-align:center;color:#607887;font-size:13px;padding:8px}
+@media(max-width:850px){
+  .layout{grid-template-columns:1fr}
+  .stage{min-height:460px}
+  .pancreas{left:4%;width:145px}
+  .liver{right:4%;width:165px}
+  .muscle{width:210px}
 }
 </style>
 </head>
 <body>
 <header>
-  <h1>IB SEHS Blood Glucose Homeostasis</h1>
-  <p>Interactive negative feedback simulation</p>
+  <div class="header-wrap">
+    <div>
+      <h1>Blood Glucose Homeostasis</h1>
+      <p>IB SEHS interactive negative-feedback simulator</p>
+    </div>
+    <div class="badge">Student decision mode</div>
+  </div>
 </header>
 
 <main>
-  <section class="dashboard">
-    <div class="metric"><span>Scenario</span><strong id="scenarioMetric">Not selected</strong></div>
-    <div class="metric"><span>Blood glucose</span><strong id="glucoseMetric">5.0 mmol/L</strong></div>
-    <div class="metric"><span>Score</span><strong><span id="score">0</span>/<span id="attempts">0</span></strong></div>
-    <div class="metric"><span>Progress</span><div class="progress-shell"><div class="progress" id="progress"></div></div></div>
-  </section>
+  <div class="layout">
+    <section class="card">
+      <div class="card-head">Animated body response</div>
+      <div class="stage">
+        <div class="sky-label">Select a scenario to begin</div>
 
-  <section class="grid">
-    <div class="card">
-      <div class="card-head">
-        <h2 id="stageHeading">Choose a starting scenario</h2>
-        <span class="badge" id="stageBadge">Stage 0</span>
+        <div class="organ pancreas" id="pancreas">
+          Pancreas
+          <small>detects change</small>
+        </div>
+
+        <div class="organ liver" id="liver">
+          Liver
+          <small>stores or releases glucose</small>
+        </div>
+
+        <div class="organ muscle" id="muscle">
+          Skeletal muscle
+          <small>takes up glucose</small>
+        </div>
+
+        <div class="blood-vessel">
+          <div class="flow"></div>
+          <span class="glucose" style="top:13px;left:0;animation-delay:-.2s"></span>
+          <span class="glucose" style="top:48px;left:60px;animation-delay:-1.1s"></span>
+          <span class="glucose" style="top:24px;left:160px;animation-delay:-2.2s"></span>
+          <span class="glucose" style="top:50px;left:270px;animation-delay:-3.4s"></span>
+          <span class="glucose" style="top:10px;left:400px;animation-delay:-4.1s"></span>
+        </div>
+
+        <div class="hormone insulin" id="insulinTag" style="left:20%;top:25%">INSULIN</div>
+        <div class="hormone glucagon" id="glucagonTag" style="left:20%;top:25%">GLUCAGON</div>
       </div>
 
-      <div class="sim-wrap">
-        <div class="state-chip" id="stateChip">Homeostasis</div>
-        <svg id="simSvg" viewBox="0 0 1000 620" role="img" aria-label="Animated diagram of blood glucose homeostasis">
-          <defs>
-            <linearGradient id="bloodGrad" x1="0" x2="1">
-              <stop offset="0%" stop-color="#a9dbff"/>
-              <stop offset="50%" stop-color="#dff3ff"/>
-              <stop offset="100%" stop-color="#a9dbff"/>
-            </linearGradient>
-            <linearGradient id="pancreasGrad" x1="0" x2="1">
-              <stop offset="0%" stop-color="#d98b3a"/>
-              <stop offset="100%" stop-color="#f2b766"/>
-            </linearGradient>
-            <linearGradient id="liverGrad" x1="0" x2="1">
-              <stop offset="0%" stop-color="#7d2f27"/>
-              <stop offset="100%" stop-color="#a94b3f"/>
-            </linearGradient>
-            <linearGradient id="muscleGrad" x1="0" x2="1">
-              <stop offset="0%" stop-color="#b84646"/>
-              <stop offset="100%" stop-color="#d66b6b"/>
-            </linearGradient>
-            <filter id="softGlow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-            <filter id="strongGlow"><feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-          </defs>
-
-          <rect x="0" y="0" width="1000" height="620" fill="#f7fbfe"/>
-          <path d="M0 260 C150 210 250 310 400 265 S700 210 1000 270 L1000 410 C800 360 650 450 450 405 S180 450 0 390 Z" fill="url(#bloodGrad)" opacity=".96"/>
-          <path id="bloodFlow1" d="M20 320 C180 270 300 350 470 315 S760 275 970 330" fill="none" stroke="#ffffff" stroke-width="8" opacity=".65" class="flowDash"/>
-          <path id="bloodFlow2" d="M30 350 C190 305 330 390 500 350 S770 320 960 365" fill="none" stroke="#78bce9" stroke-width="5" opacity=".55" class="flowDash"/>
-
-          <g id="pancreasGroup" transform="translate(90 95)">
-            <ellipse cx="95" cy="65" rx="100" ry="48" fill="#f4d6aa" opacity=".35"/>
-            <path d="M15 75 C35 25 115 10 180 42 C210 58 202 100 160 102 C120 104 105 128 62 118 C30 110 5 100 15 75Z" fill="url(#pancreasGrad)" stroke="#a85e1a" stroke-width="4"/>
-            <circle cx="70" cy="68" r="8" fill="#fff7da"/>
-            <circle cx="112" cy="52" r="7" fill="#fff7da"/>
-            <circle cx="143" cy="79" r="8" fill="#fff7da"/>
-            <text x="98" y="145" text-anchor="middle" font-size="24" font-weight="700" fill="#17324d">Pancreas</text>
-            <text x="98" y="170" text-anchor="middle" font-size="15" fill="#6d7f91">detects change and releases hormone</text>
-          </g>
-
-          <g id="liverGroup" transform="translate(700 70)">
-            <path d="M20 40 C75 5 185 10 220 60 C240 88 215 145 155 150 C90 155 40 135 20 90 C10 70 8 50 20 40Z" fill="url(#liverGrad)" stroke="#69221d" stroke-width="4"/>
-            <path d="M115 35 C95 70 98 110 125 145" fill="none" stroke="#d98b80" stroke-width="5" opacity=".55"/>
-            <text x="118" y="185" text-anchor="middle" font-size="24" font-weight="700" fill="#17324d">Liver</text>
-            <text x="118" y="210" text-anchor="middle" font-size="15" fill="#6d7f91">stores or releases glucose</text>
-          </g>
-
-          <g id="muscleGroup" transform="translate(700 430)">
-            <rect x="0" y="10" width="230" height="90" rx="45" fill="url(#muscleGrad)" stroke="#8c3131" stroke-width="4"/>
-            <path d="M30 25 L190 85 M55 18 L215 78 M20 58 L130 98" stroke="#efb1b1" stroke-width="5" opacity=".55"/>
-            <text x="115" y="130" text-anchor="middle" font-size="24" font-weight="700" fill="#17324d">Skeletal muscle</text>
-            <text x="115" y="155" text-anchor="middle" font-size="15" fill="#6d7f91">takes up and stores glucose</text>
-          </g>
-
-          <g id="cellGroup" transform="translate(85 430)">
-            <circle cx="95" cy="55" r="55" fill="#788896" stroke="#4d5d69" stroke-width="4"/>
-            <circle cx="95" cy="55" r="18" fill="#b8c4cd"/>
-            <text x="95" y="130" text-anchor="middle" font-size="24" font-weight="700" fill="#17324d">Body cells</text>
-            <text x="95" y="155" text-anchor="middle" font-size="15" fill="#6d7f91">use glucose for respiration</text>
-          </g>
-
-          <g transform="translate(360 75)">
-            <rect x="0" y="0" width="280" height="105" rx="18" fill="#ffffff" stroke="#dce7ef" stroke-width="3"/>
-            <text x="140" y="28" text-anchor="middle" font-size="17" font-weight="700" fill="#17324d">Blood glucose concentration</text>
-            <rect x="35" y="50" width="210" height="18" rx="9" fill="url(#gaugeGrad)"/>
-            <defs>
-              <linearGradient id="gaugeGrad" x1="0" x2="1">
-                <stop offset="0%" stop-color="#2f80ed"/>
-                <stop offset="50%" stop-color="#27ae60"/>
-                <stop offset="100%" stop-color="#eb5757"/>
-              </linearGradient>
-            </defs>
-            <line id="needle" x1="140" y1="42" x2="140" y2="80" stroke="#17222d" stroke-width="6" stroke-linecap="round"/>
-            <text x="38" y="93" font-size="13" fill="#6d7f91">Low</text>
-            <text x="118" y="93" font-size="13" fill="#6d7f91">Normal</text>
-            <text x="216" y="93" font-size="13" fill="#6d7f91">High</text>
-          </g>
-
-          <g id="particleLayer"></g>
-          <g id="arrowLayer"></g>
-          <g id="labelLayer"></g>
-        </svg>
-
-        <div class="legend">
-          <span><i style="background:#f2c94c;border-radius:50%"></i>Glucose</span>
-          <span><i style="background:#2f80ed"></i>Insulin</span>
-          <span><i style="background:#f2994a;transform:rotate(45deg)"></i>Glucagon</span>
+      <div class="gauge-wrap">
+        <div class="gauge-title">
+          <span>Blood glucose level</span>
+          <span id="levelText">Normal range</span>
         </div>
+        <div class="gauge"><div class="needle" id="needle"></div></div>
+        <div class="gauge-labels"><span>Low</span><span>Normal</span><span>High</span></div>
       </div>
 
       <div class="controls">
-        <button class="primary" id="highBtn">🍞 Blood glucose rises</button>
-        <button class="primary" id="lowBtn">🏃 Blood glucose falls</button>
-        <button class="secondary" id="resetBtn">Reset</button>
+        <div class="scenario-row">
+          <button class="high" onclick="startScenario('high')">After a carbohydrate-rich meal</button>
+          <button class="low" onclick="startScenario('low')">During prolonged exercise</button>
+        </div>
+        <button class="reset" onclick="resetSim()">Reset simulation</button>
       </div>
-    </div>
+    </section>
 
     <aside class="card">
-      <h2 style="margin-top:0">Student decision</h2>
-      <p id="question">Select a scenario to begin.</p>
-      <div id="choices" class="choice-grid"></div>
-      <div class="controls">
-        <button id="whyBtn" class="why hidden">Why?</button>
-        <button id="nextBtn" class="primary hidden">Next stage</button>
+      <div class="card-head">Build the feedback pathway</div>
+      <div class="question-card">
+        <div class="step" id="stepLabel">Choose a scenario</div>
+        <div id="question">Select one of the two situations to start.</div>
+        <div class="options" id="options"></div>
+        <div class="feedback" id="feedback"></div>
+        <button class="next" id="nextBtn" onclick="nextStep()">Next step</button>
       </div>
-      <div id="feedback" class="feedback" aria-live="polite">
-        Choose a scenario, then decide what should happen at each stage.
+
+      <div class="pathway">
+        <div class="path-node" id="node1">1. Stimulus</div>
+        <div class="path-node" id="node2">2. Detection by pancreas</div>
+        <div class="path-node" id="node3">3. Hormone released</div>
+        <div class="path-node" id="node4">4. Target-organ response</div>
+        <div class="path-node" id="node5">5. Return towards normal</div>
       </div>
-      <div class="tip">
-        IB sequence: stimulus → pancreas → hormone → target organ response → return toward normal range.
+
+      <div class="score">
+        <span>Correct decisions</span>
+        <strong id="score">0</strong>
       </div>
     </aside>
-  </section>
-
-  <section class="card" style="margin-top:16px">
-    <h2 style="margin-top:0">Negative feedback pathway</h2>
-    <div id="flow" class="flow-list"></div>
-  </section>
+  </div>
 </main>
 
+<footer>Single-file classroom simulator • No login or internet connection required after loading</footer>
+
 <script>
-const pathways={
-high:{
- name:"High",
- value:"8.0 mmol/L",
- needle:235,
- chip:"Blood glucose above normal",
- stages:[
-  {q:"Blood glucose has risen after a carbohydrate-rich meal. Which organ detects the change and responds?",options:["Pancreas","Liver","Skeletal muscle","Kidneys"],answer:0,why:"The pancreas detects the increase in blood glucose concentration and responds by releasing the appropriate hormone.",short:"The pancreas detects high blood glucose."},
-  {q:"Which hormone should the pancreas release?",options:["Glucagon","Adrenaline","Insulin","ADH"],answer:2,why:"The pancreas releases insulin. Insulin lowers blood glucose concentration.",short:"Insulin is released."},
-  {q:"Which response is most appropriate?",options:["The liver releases glucose into the blood","Cells increase glucose uptake and liver and muscle increase glycogenesis","Muscle glycogen is released directly into the blood","The kidneys produce glucagon"],answer:1,why:"Insulin increases glucose uptake by body cells and promotes glycogenesis in the liver and skeletal muscle.",short:"Glucose uptake and glycogenesis increase."},
-  {q:"What happens when blood glucose returns toward the normal range?",options:["Insulin secretion decreases","Glucagon secretion increases greatly","The pancreas releases insulin indefinitely","The liver stops storing glycogen permanently"],answer:0,why:"As the original stimulus is reduced, the pancreas reduces insulin secretion. The response has opposed the initial rise, completing negative feedback.",short:"Insulin secretion decreases as homeostasis is restored."}
- ]},
-low:{
- name:"Low",
- value:"3.2 mmol/L",
- needle:45,
- chip:"Blood glucose below normal",
- stages:[
-  {q:"Blood glucose has fallen during fasting or prolonged exercise. Which organ detects the change and responds?",options:["Pancreas","Liver","Skeletal muscle","Kidneys"],answer:0,why:"The pancreas detects the decrease in blood glucose concentration and responds by releasing the appropriate hormone.",short:"The pancreas detects low blood glucose."},
-  {q:"Which hormone should the pancreas release?",options:["Insulin","Thyroxine","Glucagon","ADH"],answer:2,why:"The pancreas releases glucagon. Glucagon raises blood glucose concentration.",short:"Glucagon is released."},
-  {q:"Which response is most appropriate?",options:["The liver increases glycogenolysis and gluconeogenesis","Skeletal muscle releases glycogen directly into the blood","Body cells increase glucose uptake because of insulin","The pancreas stores blood glucose as glycogen"],answer:0,why:"Glucagon acts mainly on the liver, increasing glycogenolysis and gluconeogenesis so glucose is released into the bloodstream.",short:"The liver releases glucose by glycogenolysis and gluconeogenesis."},
-  {q:"What happens when blood glucose returns toward the normal range?",options:["Glucagon secretion decreases","Insulin remains absent permanently","The pancreas releases glucagon indefinitely","The liver continues releasing glucose at the same rate"],answer:0,why:"As blood glucose returns toward normal, the stimulus for glucagon release is reduced and secretion decreases.",short:"Glucagon secretion decreases as homeostasis is restored."}
- ]}};
+const data = {
+  high: [
+    {
+      q:"What change has occurred after the meal?",
+      opts:["Blood glucose has risen above the normal range","Blood glucose has fallen below the normal range","Blood glucose has remained unchanged"],
+      a:0,
+      why:"Digested carbohydrate is absorbed as glucose, increasing blood glucose concentration.",
+      node:1
+    },
+    {
+      q:"Which organ detects the change in blood glucose?",
+      opts:["Pancreas","Liver","Skeletal muscle"],
+      a:0,
+      why:"The pancreas detects that blood glucose has moved above the normal range.",
+      node:2
+    },
+    {
+      q:"Which hormone should the pancreas release?",
+      opts:["Glucagon","Insulin","Adrenaline"],
+      a:1,
+      why:"Insulin is released when blood glucose concentration is elevated.",
+      node:3,
+      anim:"insulin"
+    },
+    {
+      q:"Which response helps lower blood glucose?",
+      opts:["The liver releases more glucose","Cells take up glucose and the liver stores glucose as glycogen","Muscles stop using glucose"],
+      a:1,
+      why:"Insulin promotes glucose uptake by cells and glycogenesis in the liver and muscles.",
+      node:4
+    },
+    {
+      q:"What happens as negative feedback succeeds?",
+      opts:["Blood glucose moves back towards the normal range","Blood glucose continues rising indefinitely","Insulin secretion increases forever"],
+      a:0,
+      why:"As blood glucose returns towards normal, the original stimulus is reduced and insulin secretion decreases.",
+      node:5,
+      finish:true
+    }
+  ],
+  low: [
+    {
+      q:"What change may occur during prolonged exercise?",
+      opts:["Blood glucose may fall below the normal range","Blood glucose must rise sharply","Blood glucose cannot change"],
+      a:0,
+      why:"Working muscles use glucose, which may lower blood glucose concentration.",
+      node:1
+    },
+    {
+      q:"Which organ detects this change?",
+      opts:["Pancreas","Lungs","Kidneys"],
+      a:0,
+      why:"The pancreas detects that blood glucose has moved below the normal range.",
+      node:2
+    },
+    {
+      q:"Which hormone should the pancreas release?",
+      opts:["Insulin","Glucagon","Melatonin"],
+      a:1,
+      why:"Glucagon is released when blood glucose concentration is too low.",
+      node:3,
+      anim:"glucagon"
+    },
+    {
+      q:"Which response helps raise blood glucose?",
+      opts:["The liver breaks down glycogen and releases glucose","The liver stores more glucose as glycogen","All glucose uptake immediately stops"],
+      a:0,
+      why:"Glucagon promotes glycogenolysis and glucose release from the liver.",
+      node:4
+    },
+    {
+      q:"What happens as negative feedback succeeds?",
+      opts:["Blood glucose moves back towards the normal range","Blood glucose continues falling indefinitely","Glucagon secretion increases forever"],
+      a:0,
+      why:"As blood glucose returns towards normal, the stimulus is reduced and glucagon secretion decreases.",
+      node:5,
+      finish:true
+    }
+  ]
+};
 
-let mode=null,stage=0,answered=false,score=0,attempts=0;
-const svgNS="http://www.w3.org/2000/svg";
-const particleLayer=document.getElementById("particleLayer");
-const arrowLayer=document.getElementById("arrowLayer");
-const labelLayer=document.getElementById("labelLayer");
+let scenario=null, step=0, correct=0, answered=false;
+let currentCorrectIndex=-1;
+let sessionQuestions=[];
 
-function clearVisuals(){
- particleLayer.innerHTML="";
- arrowLayer.innerHTML="";
- labelLayer.innerHTML="";
- ["pancreasGroup","liverGroup","muscleGroup","cellGroup"].forEach(id=>document.getElementById(id).classList.remove("organActive","pulse"));
-}
-function circle(x,y,r,fill,cls=""){
- const e=document.createElementNS(svgNS,"circle");
- e.setAttribute("cx",x);e.setAttribute("cy",y);e.setAttribute("r",r);e.setAttribute("fill",fill);
- if(cls)e.setAttribute("class",cls);
- particleLayer.appendChild(e);return e;
-}
-function square(x,y,size,fill,rotate=0){
- const e=document.createElementNS(svgNS,"rect");
- e.setAttribute("x",x);e.setAttribute("y",y);e.setAttribute("width",size);e.setAttribute("height",size);
- e.setAttribute("rx",4);e.setAttribute("fill",fill);e.setAttribute("transform",`rotate(${rotate} ${x+size/2} ${y+size/2})`);
- particleLayer.appendChild(e);return e;
-}
-function animateAlong(el,path,duration,delay=0){
- const m=document.createElementNS(svgNS,"animateMotion");
- m.setAttribute("dur",duration+"ms");m.setAttribute("begin",delay+"ms");m.setAttribute("fill","freeze");
- const mp=document.createElementNS(svgNS,"mpath");
- const pid="p"+Math.random().toString(36).slice(2);
- path.setAttribute("id",pid);mp.setAttributeNS("http://www.w3.org/1999/xlink","href","#"+pid);
- m.appendChild(mp);el.appendChild(m);m.beginElement();
-}
-function path(d,stroke,width=5,dash=false){
- const p=document.createElementNS(svgNS,"path");
- p.setAttribute("d",d);p.setAttribute("fill","none");p.setAttribute("stroke",stroke);
- p.setAttribute("stroke-width",width);p.setAttribute("stroke-linecap","round");
- if(dash)p.setAttribute("stroke-dasharray","12 10");
- arrowLayer.appendChild(p);return p;
-}
-function label(x,y,text,fill="#17324d"){
- const t=document.createElementNS(svgNS,"text");
- t.setAttribute("x",x);t.setAttribute("y",y);t.setAttribute("text-anchor","middle");
- t.setAttribute("font-size","20");t.setAttribute("font-weight","700");t.setAttribute("fill",fill);
- t.textContent=text;labelLayer.appendChild(t);return t;
-}
-function setNeedle(x){document.getElementById("needle").setAttribute("x1",x);document.getElementById("needle").setAttribute("x2",x)}
-function renderScenario(type){
- clearVisuals();
- const p=pathways[type];
- setNeedle(p.needle);
- document.getElementById("stateChip").textContent=p.chip;
- document.getElementById("stateChip").style.color=type==="high"?"#a22b2b":"#245f9a";
- for(let i=0;i<type==="high"?18:7;i++){
-  const x=80+i*48+(i%3)*7,y=300+(i%2)*42;
-  circle(x,y,10,"#f2c94c","float");
- }
- const pancreas=document.getElementById("pancreasGroup");
- pancreas.classList.add("pulse");
-}
-function animateStage(type,s){
- clearVisuals();
- if(s===0){
-  document.getElementById("pancreasGroup").classList.add("organActive","pulse");
-  label(190,60,"Pancreas detects the change");
- }
- if(s===1){
-  document.getElementById("pancreasGroup").classList.add("organActive");
-  const pth=path("M230 185 C370 235 520 250 700 250",type==="high"?"#2f80ed":"#f2994a",6,true);
-  for(let i=0;i<8;i++){
-   const e=type==="high"?square(215,175,16,"#2f80ed",0):square(215,175,16,"#f2994a",45);
-   animateAlong(e,pth,1600,i*130);
+function shuffleArray(array){
+  const copy=[...array];
+  for(let i=copy.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [copy[i],copy[j]]=[copy[j],copy[i]];
   }
-  label(505,225,type==="high"?"Insulin travels in blood":"Glucagon travels in blood",type==="high"?"#2f80ed":"#c96b1c");
- }
- if(s===2){
-  if(type==="high"){
-   document.getElementById("liverGroup").classList.add("organActive");
-   document.getElementById("muscleGroup").classList.add("organActive");
-   document.getElementById("cellGroup").classList.add("organActive");
-   const routes=[
-    path("M500 330 C650 285 720 220 790 165","#f2c94c",5,true),
-    path("M500 340 C650 390 720 460 790 485","#f2c94c",5,true),
-    path("M440 350 C320 410 250 460 190 490","#f2c94c",5,true)
-   ];
-   routes.forEach((r,ri)=>{for(let i=0;i<5;i++){const e=circle(490,330,9,"#f2c94c");animateAlong(e,r,1500,i*120+ri*80)}});
-   label(500,390,"Glucose leaves the blood");
-   label(790,255,"Glycogenesis");
-   label(185,575,"Glucose uptake");
-  } else {
-   document.getElementById("liverGroup").classList.add("organActive");
-   const r=path("M800 180 C740 245 650 300 500 335","#f2c94c",5,true);
-   for(let i=0;i<12;i++){const e=circle(800,180,9,"#f2c94c");animateAlong(e,r,1600,i*100)}
-   label(720,260,"Glycogenolysis + gluconeogenesis");
-   label(510,385,"Glucose enters the blood");
+  return copy;
+}
+
+function prepareSession(type){
+  sessionQuestions=data[type].map(item=>{
+    const choices=item.opts.map((text,index)=>({text,correct:index===item.a}));
+    return {...item,choices:shuffleArray(choices)};
+  });
+}
+
+function startScenario(type){
+  scenario=type; step=0; correct=0; answered=false;
+  prepareSession(type);
+  document.getElementById("score").textContent=correct;
+  clearNodes();
+  setGauge(type==="high" ? 84 : 16);
+  render();
+}
+
+function setGauge(value){
+  document.getElementById("needle").style.left=`calc(${value}% - 3px)`;
+  document.getElementById("levelText").textContent =
+    value>66 ? "Above normal" : value<34 ? "Below normal" : "Normal range";
+}
+
+function render(){
+  const item=sessionQuestions[step];
+  answered=false;
+  currentCorrectIndex=item.choices.findIndex(choice=>choice.correct);
+  document.getElementById("stepLabel").textContent=`Step ${step+1} of ${sessionQuestions.length}`;
+  document.getElementById("question").textContent=item.q;
+  const options=document.getElementById("options");
+  options.innerHTML="";
+  item.choices.forEach((choice,i)=>{
+    const b=document.createElement("button");
+    b.className="option";
+    b.textContent=choice.text;
+    b.onclick=()=>answer(i,b);
+    options.appendChild(b);
+  });
+  const fb=document.getElementById("feedback");
+  fb.className="feedback";
+  fb.textContent="";
+  document.getElementById("nextBtn").className="next";
+  animateOrgans(step);
+}
+
+function answer(index,button){
+  if(answered)return;
+  answered=true;
+  const item=sessionQuestions[step];
+  const buttons=[...document.querySelectorAll(".option")];
+  buttons[currentCorrectIndex].classList.add("correct");
+  const fb=document.getElementById("feedback");
+
+  if(index===currentCorrectIndex){
+    correct++;
+    document.getElementById("score").textContent=correct;
+    fb.className="feedback show good";
+    fb.innerHTML="<strong>Correct.</strong> "+item.why;
+  }else{
+    button.classList.add("wrong");
+    fb.className="feedback show bad";
+    fb.innerHTML="<strong>Not quite.</strong> "+item.why;
   }
- }
- if(s===3){
-  setNeedle(140);
-  document.getElementById("stateChip").textContent="Homeostasis restored";
-  document.getElementById("stateChip").style.color="#237a45";
-  label(500,230,"Negative feedback reduces the original change","#237a45");
-  const r=path("M360 250 C450 210 550 210 640 250","#27ae60",7,true);
-  for(let i=0;i<8;i++){const e=circle(370,248,8,"#27ae60");animateAlong(e,r,1400,i*90)}
- }
+
+  document.getElementById("node"+item.node).classList.add("active");
+  if(item.anim==="insulin") hormoneAnim("insulinTag");
+  if(item.anim==="glucagon") hormoneAnim("glucagonTag");
+
+  const next=document.getElementById("nextBtn");
+  next.textContent=item.finish ? "Complete pathway" : "Next step";
+  next.className="next show";
 }
-function renderStage(){
- const item=pathways[mode].stages[stage];
- document.getElementById("stageHeading").textContent=mode==="high"?"High blood glucose pathway":"Low blood glucose pathway";
- document.getElementById("stageBadge").textContent=`Stage ${stage+1} of 4`;
- document.getElementById("progress").style.width=`${stage*25}%`;
- document.getElementById("question").textContent=item.q;
- const choices=document.getElementById("choices");choices.innerHTML="";
- item.options.forEach((o,i)=>{
-  const b=document.createElement("button");b.className="choice";b.type="button";b.textContent=o;
-  b.addEventListener("click",()=>choose(i,b));choices.appendChild(b)
- });
- const fb=document.getElementById("feedback");fb.className="feedback";fb.textContent="Choose the option you think is correct.";
- document.getElementById("whyBtn").classList.add("hidden");
- document.getElementById("nextBtn").classList.add("hidden");
- renderFlow();
- renderScenario(mode);
+
+function hormoneAnim(id){
+  const el=document.getElementById(id);
+  el.classList.remove("go");
+  void el.offsetWidth;
+  el.classList.add("go");
 }
-function choose(i,btn){
- if(answered)return;
- answered=true;attempts++;document.getElementById("attempts").textContent=attempts;
- const item=pathways[mode].stages[stage];
- [...document.getElementById("choices").children].forEach((b,idx)=>{b.disabled=true;if(idx===item.answer)b.classList.add("correct")});
- const fb=document.getElementById("feedback");
- if(i===item.answer){score++;document.getElementById("score").textContent=score;fb.className="feedback good";fb.innerHTML="<b>Correct.</b> Click <b>Why?</b> to reveal the mechanism."}
- else{btn.classList.add("wrong");fb.className="feedback bad";fb.innerHTML="<b>Not quite.</b> The correct answer is highlighted. Click <b>Why?</b> to see the physiology."}
- document.getElementById("whyBtn").classList.remove("hidden");
- animateStage(mode,stage);renderFlow(true)
+
+function nextStep(){
+  const item=sessionQuestions[step];
+  if(item.finish){
+    setGauge(50);
+    document.getElementById("stepLabel").textContent="Pathway complete";
+    document.getElementById("question").textContent=
+      scenario==="high"
+      ? "Insulin has helped return blood glucose towards the normal range."
+      : "Glucagon has helped return blood glucose towards the normal range.";
+    document.getElementById("options").innerHTML="";
+    const fb=document.getElementById("feedback");
+    fb.className="feedback show good";
+    fb.innerHTML="<strong>Negative feedback:</strong> the response opposes the original change, helping maintain homeostasis.";
+    document.getElementById("nextBtn").className="next";
+    animateOrgans(5);
+    return;
+  }
+  step++;
+  if(step===3) setGauge(scenario==="high"?68:32);
+  if(step===4) setGauge(scenario==="high"?57:43);
+  render();
 }
-document.getElementById("whyBtn").addEventListener("click",()=>{
- const item=pathways[mode].stages[stage];
- const fb=document.getElementById("feedback");fb.className="feedback good";fb.innerHTML="<b>Why?</b> "+item.why;
- document.getElementById("whyBtn").classList.add("hidden");document.getElementById("nextBtn").classList.remove("hidden")
-});
-document.getElementById("nextBtn").addEventListener("click",()=>{
- if(stage<3){stage++;answered=false;renderStage()}else finish()
-});
-function finish(){
- animateStage(mode,3);
- document.getElementById("glucoseMetric").textContent="5.0 mmol/L";
- document.getElementById("progress").style.width="100%";
- document.getElementById("stageBadge").textContent="Complete";
- document.getElementById("question").textContent="Homeostasis has been restored.";
- document.getElementById("choices").innerHTML="";
- document.getElementById("whyBtn").classList.add("hidden");document.getElementById("nextBtn").classList.add("hidden");
- const fb=document.getElementById("feedback");fb.className="feedback good";
- fb.innerHTML="<b>Negative feedback complete:</b> the response opposed the original disturbance and returned blood glucose toward its normal range.";
- renderFlow(true,true)
+
+function animateOrgans(s){
+  ["pancreas","liver","muscle"].forEach(id=>document.getElementById(id).classList.remove("active"));
+  if(s===1||s===2) document.getElementById("pancreas").classList.add("active");
+  if(s===3){
+    document.getElementById("liver").classList.add("active");
+    if(scenario==="high") document.getElementById("muscle").classList.add("active");
+  }
 }
-function renderFlow(current=false,complete=false){
- const flow=document.getElementById("flow");flow.innerHTML="";
- if(!mode){flow.innerHTML="<div class='flow-step'>Choose a scenario to reveal the pathway.</div>";return}
- pathways[mode].stages.forEach((s,i)=>{
-  const d=document.createElement("div");d.className="flow-step";
-  if(complete||i<stage)d.classList.add("done");else if(i===stage)d.classList.add("active");
-  d.textContent=(complete||i<stage||(i===stage&&current))?s.short:`Stage ${i+1}: hidden until completed`;
-  flow.appendChild(d)
- })
+
+function clearNodes(){
+  document.querySelectorAll(".path-node").forEach(n=>n.classList.remove("active"));
 }
-function setScenario(type){
- mode=type;stage=0;answered=false;
- document.getElementById("scenarioMetric").textContent=pathways[type].name;
- document.getElementById("glucoseMetric").textContent=pathways[type].value;
- renderStage()
+
+function resetSim(){
+  scenario=null;step=0;correct=0;answered=false;currentCorrectIndex=-1;sessionQuestions=[];
+  setGauge(50);clearNodes();
+  document.getElementById("score").textContent="0";
+  document.getElementById("stepLabel").textContent="Choose a scenario";
+  document.getElementById("question").textContent="Select one of the two situations to start.";
+  document.getElementById("options").innerHTML="";
+  document.getElementById("feedback").className="feedback";
+  document.getElementById("nextBtn").className="next";
+  ["pancreas","liver","muscle"].forEach(id=>document.getElementById(id).classList.remove("active"));
 }
-document.getElementById("highBtn").addEventListener("click",()=>setScenario("high"));
-document.getElementById("lowBtn").addEventListener("click",()=>setScenario("low"));
-document.getElementById("resetBtn").addEventListener("click",()=>{
- mode=null;stage=0;answered=false;clearVisuals();setNeedle(140);
- document.getElementById("scenarioMetric").textContent="Not selected";
- document.getElementById("glucoseMetric").textContent="5.0 mmol/L";
- document.getElementById("stageHeading").textContent="Choose a starting scenario";
- document.getElementById("stageBadge").textContent="Stage 0";
- document.getElementById("stateChip").textContent="Homeostasis";
- document.getElementById("progress").style.width="0";
- document.getElementById("question").textContent="Select a scenario to begin.";
- document.getElementById("choices").innerHTML="";
- const fb=document.getElementById("feedback");fb.className="feedback";fb.textContent="Choose a scenario, then decide what should happen at each stage.";
- document.getElementById("whyBtn").classList.add("hidden");document.getElementById("nextBtn").classList.add("hidden");
- renderFlow()
-});
-renderFlow();
 </script>
 </body>
 </html>
